@@ -1,0 +1,417 @@
+:root {
+  --text: #c7cbe0;
+  --text-dim: #8890b0;
+  --bg: #05060c;
+  --panel: #0b0e1c;
+  --border: rgba(255, 255, 255, 0.1);
+
+  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 16px/150% var(--sans);
+  color-scheme: dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: radial-gradient(circle at 50% -10%, #101534 0%, #05060c 60%);
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  color: #f2f4ff;
+  margin: 0 0 0.4em;
+}
+
+p {
+  margin: 0 0 0.6em;
+  color: var(--text-dim);
+}
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.echelon-app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Buttons & shared bits ---------- */
+
+.echelon-btn {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.75em 1.6em;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.echelon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.echelon-btn.small {
+  padding: 0.4em 1em;
+  font-size: 0.85em;
+}
+
+.echelon-hint {
+  font-size: 0.85em;
+  color: var(--text-dim);
+}
+
+/* ---------- Draft screen ---------- */
+
+.echelon-draft {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3em 1.5em 4em;
+  text-align: center;
+}
+
+.echelon-title {
+  font-size: 4em;
+  letter-spacing: 0.3em;
+  background: linear-gradient(120deg, #7ff5ff, #2d5bff 45%, #ff9d7a 65%, #8a1030);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.echelon-subtitle {
+  font-size: 1.1em;
+  margin-bottom: 2em;
+}
+
+.echelon-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75em;
+  text-align: left;
+  margin: 1.5em 0;
+}
+
+.echelon-roster-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9em 1em;
+}
+
+.echelon-roster-card strong {
+  color: #fff;
+}
+
+.echelon-roster-card p {
+  margin: 0.3em 0 0;
+  font-size: 0.85em;
+}
+
+/* ---------- Gate (pass-the-device) ---------- */
+
+.echelon-gate {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1em;
+  padding: 2em;
+}
+
+.echelon-gate h1 {
+  font-size: 2.2em;
+}
+
+/* ---------- Formation ---------- */
+
+.echelon-formation {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1em 1.5em;
+  gap: 0.75em;
+}
+
+.echelon-formation-header {
+  text-align: center;
+}
+
+.echelon-formation-body {
+  flex: 1;
+  display: flex;
+  gap: 1em;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.echelon-formation-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  width: 220px;
+  overflow-y: auto;
+}
+
+.echelon-roster-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5em 0.8em;
+  cursor: pointer;
+  text-align: left;
+}
+
+.echelon-roster-item.active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.echelon-glyph-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  font-weight: 700;
+}
+
+.echelon-formation-footer {
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- Reveal ---------- */
+
+.echelon-reveal {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.5em;
+  gap: 0.5em;
+}
+
+.echelon-legend {
+  display: flex;
+  gap: 1.5em;
+  font-weight: 600;
+  margin: 0.5em 0;
+}
+
+/* ---------- Battle ---------- */
+
+.echelon-battle {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.echelon-battle-board {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1em;
+  min-width: 0;
+}
+
+.echelon-board {
+  width: min(85vh, 90vw);
+  height: min(85vh, 90vw);
+  cursor: crosshair;
+  filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.6));
+}
+
+.echelon-hud {
+  width: 320px;
+  flex-shrink: 0;
+  padding: 1.2em;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  overflow-y: auto;
+}
+
+.echelon-selection {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.8em;
+}
+
+.echelon-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.85em;
+  margin-top: 0.5em;
+  color: var(--text-dim);
+}
+
+.echelon-chain-prompt {
+  background: rgba(127, 245, 255, 0.08);
+  border: 1px solid rgba(127, 245, 255, 0.35);
+  border-radius: 10px;
+  padding: 0.8em;
+}
+
+.echelon-error {
+  color: #ff8a8a;
+  font-size: 0.85em;
+}
+
+.echelon-log {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  font-size: 0.82em;
+  color: var(--text-dim);
+  overflow-y: auto;
+}
+
+.echelon-log p {
+  margin: 0;
+  padding: 0.3em 0.5em;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+}
+
+/* ---------- Game over ---------- */
+
+.echelon-gameover {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1em;
+}
+
+.echelon-gameover h1 {
+  font-size: 2.4em;
+  max-width: 700px;
+}
+
+/* ---------- SVG board internals ---------- */
+
+.echelon-piece {
+  cursor: pointer;
+}
+
+.echelon-glyph {
+  font-size: 1.6px;
+  fill: rgba(255, 255, 255, 0.85);
+  font-family: var(--mono);
+  pointer-events: none;
+}
+
+.echelon-flash {
+  animation: echelon-flash-anim 0.65s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes echelon-flash-anim {
+  0% {
+    opacity: 1;
+    r: 1;
+  }
+  60% {
+    opacity: 0.9;
+    r: 6;
+  }
+  100% {
+    opacity: 0;
+    r: 9;
+  }
+}
+
+.echelon-trail {
+  animation: echelon-trail-anim 1.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes echelon-trail-anim {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.echelon-hazard {
+  animation: echelon-hazard-pulse 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes echelon-hazard-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.echelon-tripwire {
+  stroke-dasharray: 0.4 0.9;
+  opacity: 0.8;
+  pointer-events: none;
+  filter: drop-shadow(0 0 1px currentColor);
+}
+
+@media (max-width: 900px) {
+  .echelon-battle {
+    flex-direction: column;
+  }
+  .echelon-hud {
+    width: auto;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+  .echelon-formation-body {
+    flex-direction: column;
+  }
+  .echelon-formation-roster {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
