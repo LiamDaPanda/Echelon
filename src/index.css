@@ -58,24 +58,26 @@ p {
 .echelon-btn {
   font: inherit;
   font-weight: 600;
-  padding: 0.75em 1.6em;
-  border-radius: 999px;
+  padding: 0.75em 1.8em;
   border: 1.5px solid var(--border);
   background: rgba(255, 255, 255, 0.04);
   color: #fff;
   cursor: pointer;
   letter-spacing: 0.02em;
-  transition: transform 0.15s ease, background 0.15s ease;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .echelon-btn:hover {
   background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
 
 .echelon-btn.small {
-  padding: 0.4em 1em;
+  padding: 0.4em 1.1em;
   font-size: 0.85em;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 }
 
 .echelon-hint {
@@ -94,12 +96,20 @@ p {
 
 .echelon-title {
   font-size: 4em;
-  letter-spacing: 0.3em;
-  background: linear-gradient(120deg, #7ff5ff, #2d5bff 45%, #ff9d7a 65%, #8a1030);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+  letter-spacing: 0.22em;
+  text-shadow: 0 2px 24px rgba(127, 245, 255, 0.25), 0 2px 24px rgba(255, 157, 122, 0.2);
+}
+
+/* A hard seam down the middle, sapphire vs garnet, not a soft rainbow blend —
+   the two mirrored factions the word itself names, set as two solid halves
+   rather than a background-clip gradient trick. */
+.echelon-title span:first-child {
+  padding-right: 0.05em;
+  border-right: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.echelon-title span:last-child {
+  padding-left: 0.14em;
 }
 
 .echelon-subtitle {

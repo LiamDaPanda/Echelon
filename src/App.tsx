@@ -10,7 +10,10 @@ import { PLAYER_THEME } from './ui/theme';
 function DraftScreen({ state, onBegin }: { state: GameState; onBegin: () => void }) {
   return (
     <div className="echelon-draft">
-      <h1 className="echelon-title">ECHELON</h1>
+      <h1 className="echelon-title">
+        <span style={{ color: PLAYER_THEME.sapphire.rim }}>ECHE</span>
+        <span style={{ color: PLAYER_THEME.garnet.rim }}>LON</span>
+      </h1>
       <p className="echelon-subtitle">Formation, foresight, and reads are everything.</p>
       <h2>This match's roster</h2>
       <div className="echelon-roster-grid">

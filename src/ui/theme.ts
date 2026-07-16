@@ -24,101 +24,184 @@ export const BOARD_BG = {
   line: 'rgba(255,255,255,0.08)',
 };
 
-/** Silhouette generator keyed by archetype, so each piece is readable at a glance. */
-export const PIECE_SHAPE: Record<PieceType, (r: number) => string> = {
-  core: (r) => diamond(r * 1.3),
-  lance: (r) => spike(r),
-  warden: (r) => polygon(r, 6),
-  ghost: (r) => teardrop(r),
-  tether: (r) => polygon(r, 5),
-  orbiter: (r) => polygon(r, 7),
-  ram: (r) => arrowhead(r),
-  sentinel: (r) => obelisk(r),
-  beacon: (r) => burst(r, 8),
-  anchor: (r) => anchorShape(r),
-  prism: (r) => polygon(r, 3),
-  thorn: (r) => burst(r, 5),
-  herald: (r) => bowtie(r),
-  facade: (r) => polygon(r, 9),
-};
+export type ShapeDef = { kind: 'polygon'; points: string } | { kind: 'path'; d: string };
 
 function pt(x: number, y: number): string {
   return `${x.toFixed(2)},${y.toFixed(2)}`;
 }
 
-function polygon(r: number, sides: number, rotate = -Math.PI / 2): string {
-  const pts: string[] = [];
-  for (let i = 0; i < sides; i++) {
-    const a = rotate + (i / sides) * Math.PI * 2;
-    pts.push(pt(Math.cos(a) * r, Math.sin(a) * r));
-  }
-  return pts.join(' ');
+/** A hand-placed outline, scaled by r. Each archetype gets its own silhouette family
+ * (a spear, a shield, a mask, a ring...) rather than an interchangeable N-gon, so a
+ * piece is readable by shape alone before you ever read its letter. */
+function poly(r: number, unitPoints: Array<[number, number]>): ShapeDef {
+  return { kind: 'polygon', points: unitPoints.map(([x, y]) => pt(x * r, y * r)).join(' ') };
 }
 
-function diamond(r: number): string {
-  return [pt(0, -r), pt(r * 0.7, 0), pt(0, r), pt(-r * 0.7, 0)].join(' ');
+function ringPath(r: number, outer: number, inner: number): ShapeDef {
+  const o = r * outer;
+  const i = r * inner;
+  return {
+    kind: 'path',
+    d: `M ${-o} 0 A ${o} ${o} 0 1 0 ${o} 0 A ${o} ${o} 0 1 0 ${-o} 0 Z M ${-i} 0 A ${i} ${i} 0 1 1 ${i} 0 A ${i} ${i} 0 1 1 ${-i} 0 Z`,
+  };
 }
 
-function spike(r: number): string {
-  return [pt(0, -r * 1.3), pt(r * 0.35, r * 0.3), pt(0, r * 0.7), pt(-r * 0.35, r * 0.3)].join(' ');
+function chainLinkPath(r: number): ShapeDef {
+  const cr = r * 0.62;
+  const dy = r * 0.5;
+  const loop = (cx: number, cy: number) =>
+    `M ${cx - cr} ${cy} A ${cr} ${cr} 0 1 0 ${cx + cr} ${cy} A ${cr} ${cr} 0 1 0 ${cx - cr} ${cy} Z`;
+  return { kind: 'path', d: `${loop(0, -dy)} ${loop(0, dy)}` };
 }
 
-function teardrop(r: number): string {
-  return [
-    pt(0, -r),
-    pt(r * 0.6, r * 0.2),
-    pt(r * 0.35, r),
-    pt(-r * 0.35, r),
-    pt(-r * 0.6, r * 0.2),
-  ].join(' ');
-}
-
-function arrowhead(r: number): string {
-  return [pt(0, -r * 1.2), pt(r * 0.9, r * 0.6), pt(0, r * 0.1), pt(-r * 0.9, r * 0.6)].join(' ');
-}
-
-function obelisk(r: number): string {
-  return [pt(0, -r * 1.3), pt(r * 0.3, -r * 0.2), pt(r * 0.3, r), pt(-r * 0.3, r), pt(-r * 0.3, -r * 0.2)].join(' ');
-}
-
-function burst(r: number, spikes: number): string {
-  const pts: string[] = [];
-  for (let i = 0; i < spikes * 2; i++) {
-    const a = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
-    const radius = i % 2 === 0 ? r * 1.1 : r * 0.42;
-    pts.push(pt(Math.cos(a) * radius, Math.sin(a) * radius));
-  }
-  return pts.join(' ');
-}
-
-function anchorShape(r: number): string {
-  return [
-    pt(-r * 0.55, -r),
-    pt(r * 0.55, -r),
-    pt(r * 0.55, -r * 0.3),
-    pt(r * 0.15, -r * 0.3),
-    pt(r * 0.15, r * 0.8),
-    pt(r * 0.7, r * 0.5),
-    pt(r * 0.45, r),
-    pt(0, r * 0.75),
-    pt(-r * 0.45, r),
-    pt(-r * 0.7, r * 0.5),
-    pt(-r * 0.15, r * 0.8),
-    pt(-r * 0.15, -r * 0.3),
-    pt(-r * 0.55, -r * 0.3),
-  ].join(' ');
-}
-
-function bowtie(r: number): string {
-  return [
-    pt(-r, -r * 0.8),
-    pt(0, -r * 0.15),
-    pt(r, -r * 0.8),
-    pt(r, r * 0.8),
-    pt(0, r * 0.15),
-    pt(-r, r * 0.8),
-  ].join(' ');
-}
+export const PIECE_SHAPE: Record<PieceType, (r: number) => ShapeDef> = {
+  // A faceted heart-cut gem: taller than wide, the crystal the whole match protects.
+  core: (r) =>
+    poly(r * 1.15, [
+      [0, -1.3],
+      [0.62, -0.55],
+      [0.8, 0.25],
+      [0, 1.25],
+      [-0.8, 0.25],
+      [-0.62, -0.55],
+    ]),
+  // A spear with a crossguard — the unlimited-range striker.
+  lance: (r) =>
+    poly(r, [
+      [0, -1.5],
+      [0.16, -0.55],
+      [0.5, -0.4],
+      [0.16, -0.15],
+      [0, 1.3],
+      [-0.16, -0.15],
+      [-0.5, -0.4],
+      [-0.16, -0.55],
+    ]),
+  // A squat heraldic shield — the slowing bastion.
+  warden: (r) =>
+    poly(r, [
+      [-0.85, -0.85],
+      [0.85, -0.85],
+      [0.95, 0.15],
+      [0, 1.2],
+      [-0.95, 0.15],
+    ]),
+  // An asymmetric wisp with a curling tail — never quite the same shape twice.
+  ghost: (r) =>
+    poly(r, [
+      [0, -1.2],
+      [0.5, -0.35],
+      [0.32, 0.35],
+      [0.62, 1.05],
+      [0.05, 0.6],
+      [-0.35, 1.15],
+      [-0.48, 0.3],
+      [-0.5, -0.4],
+    ]),
+  // Two linked loops — literally a chain link.
+  tether: (r) => chainLinkPath(r),
+  // A ring around a small core — a piece that shields whatever it circles.
+  orbiter: (r) => ringPath(r, 1.05, 0.5),
+  // A blunt, wide-based wedge — mass built to shove, not to pierce.
+  ram: (r) =>
+    poly(r, [
+      [0, -1.3],
+      [0.9, 0.15],
+      [0.5, 0.15],
+      [0.5, 1.05],
+      [-0.5, 1.05],
+      [-0.5, 0.15],
+      [-0.9, 0.15],
+    ]),
+  // A tall thin watch-obelisk with a narrowed eye slit.
+  sentinel: (r) =>
+    poly(r, [
+      [0, -1.35],
+      [0.3, -0.75],
+      [0.22, -0.5],
+      [0.3, 1.05],
+      [-0.3, 1.05],
+      [-0.22, -0.5],
+      [-0.3, -0.75],
+    ]),
+  // A lit bulb on a flared base — the piece that throws light further.
+  beacon: (r) =>
+    poly(r, [
+      [0, -1.3],
+      [0.55, -0.9],
+      [0.65, -0.15],
+      [0.35, 0.25],
+      [0.35, 1.0],
+      [-0.35, 1.0],
+      [-0.35, 0.25],
+      [-0.65, -0.15],
+      [-0.55, -0.9],
+    ]),
+  // A literal anchor.
+  anchor: (r) =>
+    poly(r, [
+      [-0.55, -1],
+      [0.55, -1],
+      [0.55, -0.3],
+      [0.15, -0.3],
+      [0.15, 0.8],
+      [0.7, 0.5],
+      [0.45, 1],
+      [0, 0.75],
+      [-0.45, 1],
+      [-0.7, 0.5],
+      [-0.15, 0.8],
+      [-0.15, -0.3],
+      [-0.55, -0.3],
+    ]),
+  // A single clean triangular prism.
+  prism: (r) =>
+    poly(r, [
+      [0, -1.2],
+      [1.05, 0.9],
+      [-1.05, 0.9],
+    ]),
+  // An irregular jagged bramble — organic, not a clean symmetrical star.
+  thorn: (r) =>
+    poly(r, [
+      [0, -1.3],
+      [0.2, -0.4],
+      [0.75, -0.55],
+      [0.3, 0.05],
+      [0.85, 0.55],
+      [0.15, 0.45],
+      [0.35, 1.2],
+      [-0.1, 0.5],
+      [-0.7, 0.9],
+      [-0.25, 0.15],
+      [-0.8, -0.25],
+      [-0.15, -0.3],
+    ]),
+  // Two opposed chevrons — a swap/exchange glyph.
+  herald: (r) =>
+    poly(r, [
+      [-1, -0.85],
+      [0, -0.15],
+      [1, -0.85],
+      [1, 0.85],
+      [0, 0.15],
+      [-1, 0.85],
+    ]),
+  // A mask: a rounded face outline with one eye-slit notch, never a perfect regular shape.
+  facade: (r) =>
+    poly(r, [
+      [0, -1.2],
+      [0.68, -0.85],
+      [0.55, -0.15],
+      [0.9, 0.05],
+      [0.55, 0.9],
+      [0, 1.2],
+      [-0.55, 0.9],
+      [-0.9, 0.05],
+      [-0.55, -0.15],
+      [-0.68, -0.85],
+    ]),
+};
 
 export const ARCHETYPE_GLYPH: Record<Archetype, string> = {
   lance: 'L',
