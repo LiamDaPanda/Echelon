@@ -241,6 +241,8 @@ function PieceGlyph({
       }}
       className="echelon-piece"
     >
+      {/* Invisible, larger-than-the-glyph hit area so pieces stay tappable on touch screens. */}
+      <circle r={PIECE_RADIUS + 2.2} fill="transparent" pointerEvents="all" />
       {(selected || pendingPivot) && (
         <circle r={PIECE_RADIUS + 1.1} fill="none" stroke={selected ? 'white' : theme.rim} strokeWidth={0.3} opacity={0.85} />
       )}
