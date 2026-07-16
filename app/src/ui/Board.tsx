@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { baseRing } from '../engine/passives';
 import { ARENA_RADIUS, DEPLOY_LINE, type GameState, type Piece, type PlayerId, type Vec2 } from '../engine/types';
+import { extrudePolygon, shadeHex } from './crystal';
 import { ARCHETYPE_GLYPH, BOARD_BG, PIECE_SHAPE, PLAYER_THEME, type ShapeDef } from './theme';
 
 const PIECE_RADIUS = 2.6;
@@ -71,6 +72,16 @@ export function Board({
           <stop offset="0%" stopColor="rgba(255,255,255,0.16)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </radialGradient>
+        {/* Genuinely round forms (Tether's beads, Orbiter's ring and core) read as
+            polished glass/metal with a radial gradient — unlike a flat polygon, a
+            sphere or torus really does shade this way under a point light. */}
+        {(['sapphire', 'garnet'] as PlayerId[]).map((owner) => (
+          <radialGradient key={owner} id={`bead-${owner}`} cx="32%" cy="28%" r="75%">
+            <stop offset="0%" stopColor={PLAYER_THEME[owner].rim} />
+            <stop offset="45%" stopColor={PLAYER_THEME[owner].base} />
+            <stop offset="100%" stopColor={PLAYER_THEME[owner].deep} />
+          </radialGradient>
+        ))}
       </defs>
 
       <circle cx={0} cy={0} r={ARENA_RADIUS} fill="url(#glass)" stroke="rgba(255,255,255,0.12)" strokeWidth={0.4} />
@@ -179,11 +190,6 @@ function displayType(piece: Piece, viewer: PlayerId) {
   return piece.type;
 }
 
-/** Fixed diagonal light-split used to fake gem facets, clipped to each piece's own silhouette. */
-const FACET_SPAN = PIECE_RADIUS * 1.7;
-const HIGHLIGHT_FACET = `${pt2(-FACET_SPAN, -FACET_SPAN)} ${pt2(FACET_SPAN, -FACET_SPAN)} ${pt2(-FACET_SPAN, FACET_SPAN)}`;
-const SHADOW_FACET = `${pt2(FACET_SPAN, -FACET_SPAN)} ${pt2(FACET_SPAN, FACET_SPAN)} ${pt2(-FACET_SPAN, FACET_SPAN)}`;
-
 function pt2(x: number, y: number): string {
   return `${x.toFixed(2)},${y.toFixed(2)}`;
 }
@@ -204,11 +210,63 @@ function sparklePoints(size: number): string {
 }
 const SPARKLE = sparklePoints(0.5);
 
-function ShapeOutline({ shape, ...rest }: { shape: ShapeDef } & React.SVGProps<SVGPolygonElement | SVGPathElement>) {
-  if (shape.kind === 'polygon') {
-    return <polygon points={shape.points} {...(rest as React.SVGProps<SVGPolygonElement>)} />;
-  }
-  return <path d={shape.d} fillRule="evenodd" {...(rest as React.SVGProps<SVGPathElement>)} />;
+/** How deep the extruded bevel reads, in board units. */
+const EXTRUDE_DEPTH = PIECE_RADIUS * 0.42;
+
+/** Fixed diagonal light-split, layered on top of a crystal's flat top face for extra sparkle. */
+const FACET_SPAN = PIECE_RADIUS * 1.7;
+const HIGHLIGHT_FACET = `${pt2(-FACET_SPAN, -FACET_SPAN)} ${pt2(FACET_SPAN, -FACET_SPAN)} ${pt2(-FACET_SPAN, FACET_SPAN)}`;
+const SHADOW_FACET = `${pt2(FACET_SPAN, -FACET_SPAN)} ${pt2(FACET_SPAN, FACET_SPAN)} ${pt2(-FACET_SPAN, FACET_SPAN)}`;
+
+/** A faceted low-poly gem: an extruded bevel of individually-lit side facets under a flat top face. */
+function CrystalGlyph({ shapePoints, owner }: { shapePoints: string; owner: PlayerId }) {
+  const theme = PLAYER_THEME[owner];
+  const extrusion = useMemo(() => extrudePolygon(shapePoints, EXTRUDE_DEPTH), [shapePoints]);
+  const clipId = useId();
+
+  return (
+    <g>
+      {extrusion.sides.map((facet, i) => (
+        <polygon key={i} points={facet.points} fill={shadeHex(theme.base, facet.shade)} stroke="rgba(0,0,0,0.35)" strokeWidth={0.06} />
+      ))}
+      <defs>
+        <clipPath id={clipId}>
+          <polygon points={extrusion.top} />
+        </clipPath>
+      </defs>
+      <polygon points={extrusion.top} fill={shadeHex(theme.base, 0.5)} stroke={theme.rim} strokeWidth={0.2} />
+      <g clipPath={`url(#${clipId})`}>
+        <polygon points={HIGHLIGHT_FACET} fill="#ffffff" opacity={0.18} />
+        <polygon points={SHADOW_FACET} fill="#000000" opacity={0.16} />
+      </g>
+    </g>
+  );
+}
+
+/** Two linked glass beads — rendered as separate circles so each gets its own radial highlight. */
+function TetherGlyph({ owner }: { owner: PlayerId }) {
+  const theme = PLAYER_THEME[owner];
+  const cr = PIECE_RADIUS * 0.62;
+  const dy = PIECE_RADIUS * 0.5;
+  return (
+    <g>
+      <circle cx={0} cy={-dy} r={cr} fill={`url(#bead-${owner})`} stroke={theme.rim} strokeWidth={0.22} />
+      <circle cx={0} cy={dy} r={cr} fill={`url(#bead-${owner})`} stroke={theme.rim} strokeWidth={0.22} />
+    </g>
+  );
+}
+
+/** A lit glass ring around a small shielded core-bead. */
+function OrbiterGlyph({ shape, owner }: { shape: ShapeDef; owner: PlayerId }) {
+  const theme = PLAYER_THEME[owner];
+  return (
+    <g>
+      {shape.kind === 'path' && (
+        <path d={shape.d} fillRule="evenodd" fill={`url(#bead-${owner})`} stroke={theme.rim} strokeWidth={0.22} />
+      )}
+      <circle cx={0} cy={0} r={PIECE_RADIUS * 0.3} fill={`url(#bead-${owner})`} stroke={theme.rim} strokeWidth={0.14} />
+    </g>
+  );
 }
 
 function PieceGlyph({
@@ -227,7 +285,6 @@ function PieceGlyph({
   const shown = displayType(piece, viewer);
   const theme = PLAYER_THEME[piece.owner];
   const shape = PIECE_SHAPE[shown](PIECE_RADIUS);
-  const clipId = `clip-${piece.id}`;
   const glintX = -PIECE_RADIUS * 0.4;
   const glintY = -PIECE_RADIUS * 0.42;
 
@@ -246,17 +303,13 @@ function PieceGlyph({
       {(selected || pendingPivot) && (
         <circle r={PIECE_RADIUS + 1.1} fill="none" stroke={selected ? 'white' : theme.rim} strokeWidth={0.3} opacity={0.85} />
       )}
-      <defs>
-        <clipPath id={clipId}>
-          <ShapeOutline shape={shape} />
-        </clipPath>
-      </defs>
-      <ShapeOutline shape={shape} fill={theme.base} stroke={theme.rim} strokeWidth={0.22} />
-      {shown === 'orbiter' && <circle cx={0} cy={0} r={PIECE_RADIUS * 0.3} fill={theme.rim} />}
-      <g clipPath={`url(#${clipId})`}>
-        <polygon points={HIGHLIGHT_FACET} fill="#ffffff" opacity={0.22} />
-        <polygon points={SHADOW_FACET} fill="#000000" opacity={0.24} />
-      </g>
+      {shown === 'tether' ? (
+        <TetherGlyph owner={piece.owner} />
+      ) : shown === 'orbiter' ? (
+        <OrbiterGlyph shape={shape} owner={piece.owner} />
+      ) : (
+        <CrystalGlyph shapePoints={shape.kind === 'polygon' ? shape.points : ''} owner={piece.owner} />
+      )}
       <polygon points={SPARKLE} fill="white" opacity={0.95} transform={`translate(${glintX} ${glintY})`} />
       {shown !== 'core' && (
         <text y={PIECE_RADIUS + 1.6} textAnchor="middle" className="echelon-glyph">
