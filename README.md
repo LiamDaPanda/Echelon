@@ -17,7 +17,11 @@ geometry, the chain rule, and exact numbers for all 13 archetypes.
 
 ## Running it
 
+The app lives in [`app/`](./app); the repo root is reserved for the
+published static site (see "Deployment" below).
+
 ```bash
+cd app
 npm install
 npm run dev      # local dev server
 npm run test     # engine unit tests (vitest)
@@ -26,26 +30,37 @@ npm run build    # typecheck + production build
 
 ## What's here
 
-- **`src/engine/`** — the rules engine: pure TypeScript, no rendering
+- **`app/src/engine/`** — the rules engine: pure TypeScript, no rendering
   concerns. `types.ts` and `geometry.ts` are the primitives; `roster.ts`
   encodes each archetype's stats; `passives.ts` computes rings, fields,
   and shields; `moves.ts` resolves a single move/capture/chain-trigger;
   `game.ts` is the phase state machine (draft → formation → reveal →
-  battle → gameover). Covered by unit tests in `src/engine/__tests__/`.
-- **`src/ui/`** — the React/SVG presentation layer: a duotone
+  battle → gameover). Covered by unit tests in `app/src/engine/__tests__/`.
+- **`app/src/ui/`** — the React/SVG presentation layer: a duotone
   sapphire-vs-garnet palette, a glossy black-glass arena, crystalline
   piece silhouettes (one shape per archetype, each with a signature glint
   point), rings as refracted halos, capture flashes, and fading movement
   trails.
-- **`src/engine/bot.ts`** — a heuristic AI opponent. It doesn't search
+- **`app/src/engine/bot.ts`** — a heuristic AI opponent. It doesn't search
   ahead; for each unmoved piece it samples plausible targets (enemies
   worth hitting, allies worth chaining off of, some exploration), asks
   the real engine whether each candidate move is legal, and scores the
   resulting positions (captures, proximity to the enemy Core, chain
   setups). It plays by the same rules as everyone else — it can't cheat,
   it can only be dumb.
-- **`App.tsx`** — screen orchestration, for both local hotseat and vs-AI
-  matches.
+- **`app/src/App.tsx`** — screen orchestration, for both local hotseat and
+  vs-AI matches.
+
+## Deployment
+
+This repo's GitHub Pages is configured to serve straight from the `main`
+branch's root — not from a GitHub Actions artifact — and that setting isn't
+reachable through the API tools available to automate it. So instead of
+fighting that, [`.github/workflows/deploy-pages.yml`](./.github/workflows/deploy-pages.yml)
+builds `app/` on every push to `main` and commits the output (`index.html`,
+`favicon.svg`, `assets/`) straight into the repo root, which is exactly what
+Pages already serves — no settings changes required. `app/vite.config.ts`
+builds with a relative base and `outDir: '../'` to make that work.
 
 ## Playing a match
 
