@@ -1,13 +1,23 @@
 import { useState } from 'react';
 import { beginFormation, createGame } from './engine/game';
 import { ROSTER } from './engine/roster';
-import type { GameState } from './engine/types';
+import type { GameState, PlayerId } from './engine/types';
 import { BattleScreen } from './ui/BattleScreen';
 import { FormationScreen } from './ui/FormationScreen';
 import { RevealScreen } from './ui/RevealScreen';
 import { PLAYER_THEME } from './ui/theme';
 
-function DraftScreen({ state, onBegin }: { state: GameState; onBegin: () => void }) {
+function DraftScreen({
+  state,
+  aiPlayer,
+  onSetAiPlayer,
+  onBegin,
+}: {
+  state: GameState;
+  aiPlayer: PlayerId | null;
+  onSetAiPlayer: (p: PlayerId | null) => void;
+  onBegin: () => void;
+}) {
   return (
     <div className="echelon-draft">
       <h1 className="echelon-title">
@@ -15,6 +25,16 @@ function DraftScreen({ state, onBegin }: { state: GameState; onBegin: () => void
         <span style={{ color: PLAYER_THEME.garnet.rim }}>LON</span>
       </h1>
       <p className="echelon-subtitle">Formation, foresight, and reads are everything.</p>
+
+      <div className="echelon-mode-picker">
+        <button className={`echelon-mode-btn ${aiPlayer === null ? 'active' : ''}`} onClick={() => onSetAiPlayer(null)}>
+          Local hotseat — two players, one device
+        </button>
+        <button className={`echelon-mode-btn ${aiPlayer === 'garnet' ? 'active' : ''}`} onClick={() => onSetAiPlayer('garnet')}>
+          Play vs AI — you are Sapphire
+        </button>
+      </div>
+
       <h2>This match's roster</h2>
       <div className="echelon-roster-grid">
         {state.roster.map((a) => (
@@ -48,14 +68,24 @@ function GameOverScreen({ state, onRestart }: { state: GameState; onRestart: () 
 
 export default function App() {
   const [state, setState] = useState<GameState>(() => createGame());
+  const [aiPlayer, setAiPlayer] = useState<PlayerId | null>(null);
+
+  function restart() {
+    setState(createGame());
+    setAiPlayer(null);
+  }
 
   return (
     <div className="echelon-app">
-      {state.phase === 'draft' && <DraftScreen state={state} onBegin={() => setState(beginFormation(state))} />}
-      {state.phase === 'formation' && <FormationScreen state={state} onChange={setState} onBothReady={setState} />}
+      {state.phase === 'draft' && (
+        <DraftScreen state={state} aiPlayer={aiPlayer} onSetAiPlayer={setAiPlayer} onBegin={() => setState(beginFormation(state))} />
+      )}
+      {state.phase === 'formation' && (
+        <FormationScreen state={state} onChange={setState} onBothReady={setState} aiPlayer={aiPlayer} />
+      )}
       {state.phase === 'reveal' && <RevealScreen state={state} onChange={setState} />}
-      {state.phase === 'battle' && <BattleScreen state={state} onChange={setState} />}
-      {state.phase === 'gameover' && <GameOverScreen state={state} onRestart={() => setState(createGame())} />}
+      {state.phase === 'battle' && <BattleScreen state={state} onChange={setState} aiPlayer={aiPlayer} />}
+      {state.phase === 'gameover' && <GameOverScreen state={state} onRestart={restart} />}
     </div>
   );
 }
