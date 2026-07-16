@@ -1,21 +1,27 @@
 name: Deploy to GitHub Pages
 
+# This repo's GitHub Pages source is "deploy from the main branch's root",
+# not a GitHub Actions artifact, and there's no API access available to flip
+# that setting. So this builds the app and commits the output straight into
+# the repo root, which is what Pages actually serves.
+#
+# Commits made with the default GITHUB_TOKEN don't trigger further workflow
+# runs, so this job's own push here does not cause an infinite loop.
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,20 +29,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run test
-      - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
+          cache-dependency-path: app/package-lock.json
+      - working-directory: app
+        run: npm ci
+      - working-directory: app
+        run: npm run test
+      - name: Clear previous build output at repo root
+        run: |
+          rm -f index.html favicon.svg
+          rm -rf assets
+      - working-directory: app
+        run: npm run build
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Commit built site to main
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'Deploy: rebuild site from ${{ github.sha }}'
+          file_pattern: 'index.html favicon.svg assets/**'
