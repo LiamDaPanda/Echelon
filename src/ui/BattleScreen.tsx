@@ -1,21 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
+import { chooseChainMove, choosePrimaryMove } from '../engine/bot';
 import { angleTo } from '../engine/geometry';
 import { declineChain, legalMoveRange, playChainMove, playPrimaryMove } from '../engine/game';
 import type { MoveRequest } from '../engine/moves';
 import { ROSTER } from '../engine/roster';
-import type { GameState, Vec2 } from '../engine/types';
+import type { GameState, PlayerId, Vec2 } from '../engine/types';
 import { Board, type FlashEvent, type Trail } from './Board';
 import { PLAYER_THEME } from './theme';
 
 interface BattleScreenProps {
   state: GameState;
   onChange: (state: GameState) => void;
+  /** If set, this player's turns are played automatically by the bot. */
+  aiPlayer?: PlayerId | null;
 }
 
 let trailCounter = 0;
 let flashCounter = 0;
 
-export function BattleScreen({ state, onChange }: BattleScreenProps) {
+export function BattleScreen({ state, onChange, aiPlayer = null }: BattleScreenProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingPivotId, setPendingPivotId] = useState<string | null>(null);
   const [sentinelAiming, setSentinelAiming] = useState(false);
@@ -32,6 +35,35 @@ export function BattleScreen({ state, onChange }: BattleScreenProps) {
       setSentinelAiming(false);
     }
   }, [state.chain]);
+
+  useEffect(() => {
+    if (!aiPlayer || state.phase !== 'battle' || state.turn !== aiPlayer) return;
+    const timer = setTimeout(() => {
+      if (state.chain) {
+        const req = chooseChainMove(state);
+        if (req) {
+          const result = playChainMove(state, req);
+          if (result.ok) {
+            pushEffects(state, result.state, req.pieceId, req.kind);
+            onChange(result.state);
+            return;
+          }
+        }
+        const declined = declineChain(state);
+        if (declined.ok) onChange(declined.state);
+        return;
+      }
+      const req = choosePrimaryMove(state, aiPlayer);
+      if (req) {
+        const result = playPrimaryMove(state, req);
+        if (result.ok) {
+          pushEffects(state, result.state, req.pieceId, req.kind);
+          onChange(result.state);
+        }
+      }
+    }, 550);
+    return () => clearTimeout(timer);
+  }, [state, aiPlayer, onChange]);
 
   const selected = useMemo(() => state.pieces.find((p) => p.id === selectedId && p.alive) ?? null, [state.pieces, selectedId]);
   const legalRange = selectedId ? legalMoveRange(state, selectedId) : null;
@@ -76,6 +108,7 @@ export function BattleScreen({ state, onChange }: BattleScreenProps) {
 
   function handlePieceClick(id: string) {
     if (state.phase !== 'battle') return;
+    if (aiPlayer && state.turn === aiPlayer) return;
     const piece = state.pieces.find((p) => p.id === id && p.alive);
     if (!piece) return;
     const selectedKind = selected && selected.type !== 'core' ? ROSTER[selected.type].moveKind : null;
@@ -107,6 +140,7 @@ export function BattleScreen({ state, onChange }: BattleScreenProps) {
   }
 
   function handleBoardClick(point: Vec2) {
+    if (aiPlayer && state.turn === aiPlayer) return;
     if (!selected || selected.type === 'core') return;
     const kind = ROSTER[selected.type].moveKind;
     switch (kind) {
@@ -154,7 +188,10 @@ export function BattleScreen({ state, onChange }: BattleScreenProps) {
         />
       </div>
       <aside className="echelon-hud">
-        <h2 style={{ color: theme.rim }}>{theme.label}'s turn — turn {state.turnNumber}</h2>
+        <h2 style={{ color: theme.rim }}>
+          {theme.label}'s turn — turn {state.turnNumber}
+          {aiPlayer && state.turn === aiPlayer ? ' (thinking…)' : ''}
+        </h2>
         {selected && selected.type !== 'core' && (
           <div className="echelon-selection">
             <strong>{ROSTER[selected.type].label}</strong> selected
@@ -170,7 +207,7 @@ export function BattleScreen({ state, onChange }: BattleScreenProps) {
             )}
           </div>
         )}
-        {state.chain && (
+        {state.chain && !(aiPlayer && state.turn === aiPlayer) && (
           <div className="echelon-chain-prompt">
             <p>
               Chain available! Depth {state.chain.depth}, range {state.chain.availableRange.toFixed(1)}.

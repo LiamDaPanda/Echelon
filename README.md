@@ -37,18 +37,31 @@ npm run build    # typecheck + production build
   piece silhouettes (one shape per archetype, each with a signature glint
   point), rings as refracted halos, capture flashes, and fading movement
   trails.
-- **`App.tsx`** — screen orchestration for a local hotseat match.
+- **`src/engine/bot.ts`** — a heuristic AI opponent. It doesn't search
+  ahead; for each unmoved piece it samples plausible targets (enemies
+  worth hitting, allies worth chaining off of, some exploration), asks
+  the real engine whether each candidate move is legal, and scores the
+  resulting positions (captures, proximity to the enemy Core, chain
+  setups). It plays by the same rules as everyone else — it can't cheat,
+  it can only be dumb.
+- **`App.tsx`** — screen orchestration, for both local hotseat and vs-AI
+  matches.
 
-## Playing a match (local hotseat)
+## Playing a match
 
-This is a same-device, pass-and-play prototype:
+Pick a mode on the draft screen:
+
+- **Local hotseat** — two players, one device, pass-and-play.
+- **Play vs AI** — you play Sapphire; the bot plays Garnet and moves on
+  its own turns.
 
 1. **Draft** — the app draws 8 of the 13 archetypes at random; both
    players get identical armies.
 2. **Formation** — a "pass the device" gate opens the board privately for
-   each player in turn. Select a piece from the list, then click your
-   deployment zone (your half of the arena) to place it. Ready up to hand
-   the device to the other player.
+   each human player in turn. Select a piece from the list, then click
+   your deployment zone (your half of the arena) to place it. Ready up to
+   hand the device to the other player. In vs-AI mode, the bot places its
+   own formation instantly the moment you ready up — no gate, no wait.
 2. **Reveal** — once both players are ready, formations are shown and the
    match begins.
 3. **Battle** — click one of your own not-yet-acted pieces to select it,

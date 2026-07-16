@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { placePiece, setReady } from '../engine/game';
+import { chooseFormation } from '../engine/bot';
+import { opponentOf, placePiece, setReady } from '../engine/game';
 import { ROSTER } from '../engine/roster';
 import { ARCHETYPES, type GameState, type PlayerId, type Vec2 } from '../engine/types';
 import { Board } from './Board';
@@ -9,10 +10,13 @@ interface FormationScreenProps {
   state: GameState;
   onChange: (state: GameState) => void;
   onBothReady: (state: GameState) => void;
+  /** If set, this player's formation is placed and readied automatically by the bot. */
+  aiPlayer?: PlayerId | null;
 }
 
-export function FormationScreen({ state, onChange, onBothReady }: FormationScreenProps) {
-  const [gateOpenFor, setGateOpenFor] = useState<PlayerId>('sapphire');
+export function FormationScreen({ state, onChange, onBothReady, aiPlayer = null }: FormationScreenProps) {
+  const humanFirst: PlayerId = aiPlayer === 'sapphire' ? 'garnet' : 'sapphire';
+  const [gateOpenFor, setGateOpenFor] = useState<PlayerId>(humanFirst);
   const [gateShown, setGateShown] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -80,14 +84,18 @@ export function FormationScreen({ state, onChange, onBothReady }: FormationScree
           className="echelon-btn"
           style={{ borderColor: theme.rim }}
           onClick={() => {
-            const next = setReady(state, player, true);
+            let next = setReady(state, player, true);
+            if (aiPlayer && next.phase !== 'reveal') {
+              // The bot plays instantly — no gate, no waiting.
+              next = chooseFormation(next, aiPlayer);
+              next = setReady(next, aiPlayer, true);
+            }
             if (next.phase === 'reveal') {
               onBothReady(next);
               return;
             }
             onChange(next);
-            const nextPlayer = player === 'sapphire' ? 'garnet' : 'sapphire';
-            setGateOpenFor(nextPlayer);
+            setGateOpenFor(opponentOf(player));
             setGateShown(true);
             setSelectedId(null);
           }}
