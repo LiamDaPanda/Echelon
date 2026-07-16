@@ -50,6 +50,20 @@ npm run build    # typecheck + production build
   it can only be dumb.
 - **`app/src/App.tsx`** — screen orchestration, for both local hotseat and
   vs-AI matches.
+- **`app/src/ui/TutorialScreen.tsx`** — an in-app "How to play," reachable
+  from the draft screen, covering the board, formation secrecy, movement,
+  the chain rule (with a small diagram), and the win condition.
+
+## iOS / mobile
+
+`index.html` carries an apple-touch-icon, a web manifest, and the
+`apple-mobile-web-app-*` meta tags needed for "Add to Home Screen" to open
+as a standalone app rather than a browser tab. The layout is responsive
+down to phone widths (board and HUD stack vertically under 900px, piece
+tap targets are enlarged beyond their visible silhouette for touch), and
+`#root` respects `env(safe-area-inset-*)` so content clears the notch and
+home-indicator area. `app/scripts/rasterize-icons.mjs` regenerates the
+icon PNGs from `app/scripts/icon-source.svg` if the mark ever changes.
 
 ## Deployment
 

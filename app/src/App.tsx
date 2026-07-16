@@ -6,17 +6,20 @@ import { BattleScreen } from './ui/BattleScreen';
 import { FormationScreen } from './ui/FormationScreen';
 import { RevealScreen } from './ui/RevealScreen';
 import { PLAYER_THEME } from './ui/theme';
+import { TutorialScreen } from './ui/TutorialScreen';
 
 function DraftScreen({
   state,
   aiPlayer,
   onSetAiPlayer,
   onBegin,
+  onShowTutorial,
 }: {
   state: GameState;
   aiPlayer: PlayerId | null;
   onSetAiPlayer: (p: PlayerId | null) => void;
   onBegin: () => void;
+  onShowTutorial: () => void;
 }) {
   return (
     <div className="echelon-draft">
@@ -25,6 +28,10 @@ function DraftScreen({
         <span style={{ color: PLAYER_THEME.garnet.rim }}>LON</span>
       </h1>
       <p className="echelon-subtitle">Formation, foresight, and reads are everything.</p>
+
+      <button className="echelon-btn small echelon-tutorial-link" onClick={onShowTutorial}>
+        How to play
+      </button>
 
       <div className="echelon-mode-picker">
         <button className={`echelon-mode-btn ${aiPlayer === null ? 'active' : ''}`} onClick={() => onSetAiPlayer(null)}>
@@ -69,16 +76,31 @@ function GameOverScreen({ state, onRestart }: { state: GameState; onRestart: () 
 export default function App() {
   const [state, setState] = useState<GameState>(() => createGame());
   const [aiPlayer, setAiPlayer] = useState<PlayerId | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   function restart() {
     setState(createGame());
     setAiPlayer(null);
   }
 
+  if (showTutorial) {
+    return (
+      <div className="echelon-app">
+        <TutorialScreen onClose={() => setShowTutorial(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="echelon-app">
       {state.phase === 'draft' && (
-        <DraftScreen state={state} aiPlayer={aiPlayer} onSetAiPlayer={setAiPlayer} onBegin={() => setState(beginFormation(state))} />
+        <DraftScreen
+          state={state}
+          aiPlayer={aiPlayer}
+          onSetAiPlayer={setAiPlayer}
+          onBegin={() => setState(beginFormation(state))}
+          onShowTutorial={() => setShowTutorial(true)}
+        />
       )}
       {state.phase === 'formation' && (
         <FormationScreen state={state} onChange={setState} onBothReady={setState} aiPlayer={aiPlayer} />
